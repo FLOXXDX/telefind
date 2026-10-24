@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ru" data-blur="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Telefind — Каталог смартфонов</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg: #000000;
+  --fg: #f4f4f5;
+  --surface: #121212;
+  --surface-2: #1f1f1f;
+  --line: #242424;
+  --muted: #929296;
+  --glass: rgba(0, 0, 0, .8);
+  --accent: #f4f4f5;
+  --on-accent: #09090b;
+  --r: 14px;
+  --rs: 9px;
+  --pro: #fbbf24;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body {
+  min-height: 100dvh;
+  font: 400 14px/1.4 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .25s, color .25s;
+}
+::-webkit-scrollbar { display: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:disabled { cursor: default; }
+a { color: inherit; text-decoration: none; }
+h2, h3 { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i.filled { fill: currentColor; }
+.logo { width: 30px; height: 30px; }
+
+.app-header, .app-nav {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: background-color .25s;
+}
+[data-blur="off"] .app-header, [data-blur="off"] .app-nav { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+.app-header { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); box-shadow: 0 1px 0 var(--line); }
+.bar { height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand-mark { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; letter-spacing: .2em; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); transition: opacity .15s; }
+.icon-btn:active { opacity: .7; }
+.pro-pill { height: 32px; padding: 0 12px; border-radius: 999px; background: var(--pro); color: #000; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.pro-pill[hidden] { display: none; }
+
+.app-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding-bottom: env(safe-area-inset-bottom, 0px); box-shadow: 0 -1px 0 var(--line); }
+.nav-in { height: 56px; max-width: 720px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--muted); position: relative; transition: color .15s; }
+.nav-btn[aria-current="page"] { color: var(--fg); }
+.badge { position: absolute; top: 5px; left: calc(50% + 8px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+.badge[hidden] { display: none; }
+
+main { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(56px + env(safe-area-inset-bottom, 0px) + 24px); }
+.view { display: flex; flex-direction: column; gap: 16px; }
+.view[hidden] { display: none; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.title-row h2 { font-size: 17px; }
+
+.search { position: relative; }
+.search .i { position: absolute; left: 14px; top: 50%; margin-top: -10px; color: var(--muted); pointer-events: none; }
+.search input {
+  width: 100%; height: 46px; padding: 0 16px 0 44px;
+  border: 0; border-radius: var(--r); background: var(--surface-2); color: var(--fg);
+  font: inherit; font-size: 16px;
+  appearance: none; -webkit-appearance: none;
+}
+.search input::placeholder { color: var(--muted); }
+.search input:focus { outline: none; }
+.search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.row { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: none; }
+
+.chip, .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; font-weight: 600; background: var(--surface-2); color: var(--muted); transition: background-color .15s, color .15s, transform .1s, opacity .15s; }
+.chip { height: 36px; padding: 0 14px; border-radius: var(--rs); font-size: 12px; flex: none; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.btn { height: 36px; padding: 0 14px; border-radius: var(--rs); font-size: 13px; color: var(--fg); }
+.btn.sm { height: 32px; font-size: 12px; }
+.btn.block { width: 100%; }
+.btn.primary, .btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.btn.pro { background: var(--pro); color: #000; }
+.btn:active, .chip:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; transform: none; }
+.btn .i { width: 16px; height: 16px; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.card { position: relative; background: var(--surface); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0; transition: background-color .25s; }
+.media { height: 112px; border-radius: calc(var(--r) - 4px); background: var(--surface-2); display: grid; place-items: center; overflow: hidden; color: var(--muted); }
+.media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media .ph { width: 40px; height: 40px; opacity: .6; }
+.media .ph .i { width: 100%; height: 100%; }
+.media.sm { height: 64px; }
+.meta .brand { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.meta h3 { font-size: 14px; line-height: 1.3; margin-top: 2px; }
+.meta p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.price { font-size: 15px; font-weight: 700; }
+.price-old { font-size: 12px; color: var(--muted); text-decoration: line-through; }
+.price-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fav { position: absolute; top: 20px; right: 20px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--glass); transition: transform .1s; }
+.fav:active { transform: scale(.92); }
+.empty { grid-column: 1 / -1; text-align: center; padding: 40px 16px; color: var(--muted); font-size: 13px; }
+.pro-lock { position: relative; }
+.pro-lock .lock-overlay {
+  position: absolute; inset: 0; border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 12px;
+  color: var(--pro); font-weight: 700; font-size: 12px; gap: 6px;
+}
+
+.cmp-grid { display: grid; gap: 8px; }
+.cmp-head { align-items: stretch; text-align: center; gap: 8px; }
+.cmp-head h3 { font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.cmp-head .x { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--glass); color: var(--muted); z-index: 1; }
+.cmp-head .x .i { width: 14px; height: 14px; }
+.specs { padding: 4px 14px; gap: 0; }
+.spec { padding: 12px 0; }
+.spec + .spec { border-top: 1px solid var(--line); }
+.spec .lbl { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.spec .cmp-grid span { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+
+.overlay { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(0, 0, 0, .55); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
+.overlay.soft { background: rgba(0, 0, 0, .25); }
+.overlay.open { opacity: 1; visibility: visible; }
+.sheet { width: 100%; max-width: 720px; margin: 0 auto; max-height: 82dvh; overflow-y: auto; background: var(--surface); border-radius: calc(var(--r) + 8px) calc(var(--r) + 8px) 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateY(24px); transition: transform .25s cubic-bezier(.16, 1, .3, 1); }
+.overlay.open .sheet { transform: none; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.sheet-head h3 { font-size: 17px; }
+.group { margin-bottom: 20px; }
+.group[hidden] { display: none; }
+.group .label { margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips.three { display: grid; grid-template-columns: repeat(3, 1fr); }
+.swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+.swatch { position: relative; width: 36px; height: 36px; border-radius: 50%; background: var(--c); color: var(--ck); display: grid; place-items: center; cursor: pointer; flex: none; transition: transform .1s; }
+.swatch:active { transform: scale(.92); }
+.swatch .i { opacity: 0; transform: scale(.6); transition: opacity .15s, transform .15s; }
+.swatch[aria-pressed="true"] .i, .swatch.on .i { opacity: 1; transform: none; }
+.swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.setting b { display: block; font-size: 14px; font-weight: 600; }
+.setting small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.switch { position: relative; width: 48px; height: 28px; border-radius: 14px; background: var(--surface-2); flex: none; transition: background-color .2s; }
+.switch i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: transform .2s, background-color .2s; }
+.switch[aria-checked="true"] { background: var(--accent); }
+.switch[aria-checked="true"] i { transform: translateX(20px); background: var(--on-accent); }
+
+.deal { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--r); background: var(--surface-2); }
+.deal + .deal { margin-top: 8px; }
+.deal b { display: block; font-size: 14px; font-weight: 600; }
+.deal span { font-size: 13px; color: var(--muted); }
+.deal.best { background: rgba(251, 191, 36, .12); border: 1px solid rgba(251, 191, 36, .35); }
+.deal.best b { color: var(--pro); }
+
+/* PRO-экран */
+.pro-hero { padding: 24px 20px; border-radius: var(--r); background: linear-gradient(135deg, #1a1a1a 0%, #2a2000 100%); border: 1px solid rgba(251, 191, 36, .35); display: flex; flex-direction: column; gap: 16px; }
+.pro-hero h2 { font-size: 22px; color: var(--pro); }
+.pro-hero p { color: var(--muted); font-size: 13px; }
+.pro-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.pro-features li { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+.pro-features .i { color: var(--pro); margin-top: 2px; }
+
+/* Sparkline */
+.spark { width: 100%; height: 80px; display: block; }
+.spark-empty { color: var(--muted); font-size: 12px; padding: 20px 0; text-align: center; }
+
+.toast { position: fixed; left: 50%; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 600; opacity: 0; transform: translate(-50%, 12px); pointer-events: none; transition: opacity .25s, transform .25s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.spinner { width: 24px; height: 24px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-logo" viewBox="0 0 100 100">
+    <rect x="22" y="10" width="56" height="80" rx="14" stroke-width="6"/>
+    <line x1="42" y1="20" x2="58" y2="20" stroke-width="6"/>
+    <circle cx="48" cy="50" r="15" stroke-width="6"/>
+    <line x1="58" y1="60" x2="68" y2="70" stroke-width="6"/>
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1V20l-6-4-6 4V5.5a1 1 0 0 1 1-1z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M10.5 18h3"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><path d="M7 8h13M16 4l4 4-4 4M17 16H4M8 12l-4 4 4 4"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+</svg>
+
+<header class="app-header">
+  <div class="bar">
+    <button class="brand-mark" data-act="home" aria-label="Telefind — на главную">
+      <svg class="i logo" aria-hidden="true"><use href="#i-logo"/></svg>
+      <span>TELEFIND</span>
+    </button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="pro-pill" id="proPill" data-act="tab" data-value="pro" hidden>
+        <svg class="i" style="width:14px;height:14px" aria-hidden="true"><use href="#i-star"/></svg>PRO
+      </button>
+      <button class="icon-btn" data-act="settings" aria-label="Оформление">
+        <svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="tab-catalog" class="view">
+    <div class="search">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="search" type="search" placeholder="Поиск: iPhone 15, OLED, 5000 mAh" autocomplete="off" enterkeyhint="search" aria-label="Поиск по каталогу">
+    </div>
+    <div>
+      <div class="label">Разделы</div>
+      <div class="row" id="cats"></div>
+    </div>
+    <div>
+      <div class="label">Популярное сейчас</div>
+      <div class="row" id="brands"></div>
+    </div>
+    <div class="grid" id="catalogGrid">
+      <div class="empty"><div class="spinner"></div></div>
+    </div>
+  </section>
+
+  <section id="tab-compare" class="view" hidden>
+    <div class="title-row">
+      <h2>Сравнение характеристик</h2>
+      <button class="btn sm" id="cmpClear" data-act="cmp-clear">Очистить</button>
+    </div>
+    <div id="cmpBody" class="view"></div>
+  </section>
+
+  <section id="tab-favorites" class="view" hidden>
+    <h2 style="font-size:17px">Сохранённые смартфоны</h2>
+    <div class="grid" id="favGrid"></div>
+  </section>
+
+  <section id="tab-pro" class="view" hidden>
+    <div id="proBody"></div>
+  </section>
+</main>
+
+<nav class="app-nav" aria-label="Разделы приложения">
+  <div class="nav-in">
+    <button class="nav-btn" data-act="tab" data-value="catalog">
+      <svg class="i" aria-hidden="true"><use href="#i-phone"/></svg><span>Витрина</span>
+    </button>
+    <button class="nav-btn" data-act="tab" data-value="compare">
+      <svg class="i" aria-hidden="true"><use href="#i-compare"/></svg><span>Сравнение</span>
+      <span class="badge" id="badge" hidden>0</span>
+    </button>
+    <button class="nav-btn" data-act="tab" data-value="favorites">
+      <svg class="i" aria-hidden="true"><use href="#i-bookmark"/></svg><span>Закладки</span>
+    </button>
+  </div>
+</nav>
+
+<div class="overlay soft" id="settingsSheet" data-act="close-overlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheet-head">
+      <h3 id="settingsTitle">Оформление</h3>
+      <button class="icon-btn" data-act="close" aria-label="Закрыть"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="group">
+      <div class="label">Тема</div>
+      <div class="chips three">
+        <button class="chip" data-act="theme" data-value="dark">Тёмная</button>
+        <button class="chip" data-act="theme" data-value="light">Светлая</button>
+        <button class="chip" data-act="theme" data-value="custom">Своя</button>
+      </div>
+    </div>
+    <div class="group" id="bgGroup" hidden>
+      <div class="label">Фон своей темы</div>
+      <div class="swatches" id="bgSwatches"></div>
+    </div>
+    <div class="group">
+      <div class="label">Акцентный цвет</div>
+      <div class="swatches" id="accentSwatches"></div>
+    </div>
+    <div class="group">
+      <div class="label">Скругление</div>
+      <div class="chips three">
+        <button class="chip" data-act="radius" data-value="sm">Острое</button>
+        <button class="chip" data-act="radius" data-value="md">Мягкое</button>
+        <button class="chip" data-act="radius" data-value="lg">Круглое</button>
+      </div>
+    </div>
+    <div class="setting">
+      <div><b>Размытие фона</b><small>Матовое стекло в шапке и меню</small></div>
+      <button class="switch" id="blurSwitch" role="switch" aria-checked="true" aria-label="Размытие фона" data-act="blur"><i></i></button>
+    </div>
+    <button class="btn block" data-act="reset-ui">Сбросить оформление</button>
+  </div>
+</div>
+
+<div class="overlay" id="dealsSheet" data-act="close-overlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dealsTitle">
+    <div class="sheet-head">
+      <h3 id="dealsTitle">Где купить</h3>
+      <button class="icon-btn" data-act="close" aria-label="Закрыть"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div id="dealsList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="proSheet" data-act="close-overlay">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-head">
+      <h3>Telefind PRO</h3>
+      <button class="icon-btn" data-act="close" aria-label="Закрыть"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div id="proSheetBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const tg = window.Telegram && window.Telegram.WebApp;
+  try { tg && tg.ready(); tg && tg.expand(); } catch (_) {}
+
+  // ---------- Конфигурация API ----------
+  // Если index.html на том же домене, что и FastAPI — оставь пустым ''.
+  // Если отдельно (GitHub Pages) — укажи полный URL: 'https://api.example.com'
+  const API_BASE = '';
+  const HAS_API = !!API_BASE || location.protocol === 'https:';
+
+  // ---------- Демо-данные (fallback, если API недоступен) ----------
+  const DEMO_PHONES = [
+    {
+      id: 'iphone15promax', brand: 'Apple', name: 'iPhone 15 Pro Max', price: 1199, category: 'flagship',
+      chip: 'A17 Pro (3nm)', ram: '8 GB', screen: '6.7" OLED 120Hz', camera: '48 MP (5x Tele)', battery: '4422 mAh',
+      img: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&q=80',
+      is_camera: true, is_battery: false,
+      links: [
+        { store: 'Яндекс Маркет', price: '124 990 ₽', url: 'https://market.yandex.ru' },
+        { store: 'Aliexpress', price: '$1180', url: 'https://aliexpress.com' }
+      ]
+    },
+    {
+      id: 's24ultra', brand: 'Samsung', name: 'Galaxy S24 Ultra', price: 1299, category: 'flagship',
+      chip: 'Snapdragon 8 Gen 3', ram: '12 GB', screen: '6.8" AMOLED 120Hz', camera: '200 MP (5x Tele)', battery: '5000 mAh',
+      img: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&q=80',
+      is_camera: true, is_battery: true,
+      links: [{ store: 'Яндекс Маркет', price: '119 990 ₽', url: 'https://market.yandex.ru' }]
+    },
+    {
+      id: 'pocof6', brand: 'Poco', name: 'Poco F6 Pro', price: 449, category: 'budget',
+      chip: 'Snapdragon 8 Gen 2', ram: '12 GB', screen: '6.67" AMOLED 120Hz', camera: '50 MP OIS', battery: '5000 mAh',
+      img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80',
+      is_camera: false, is_battery: true,
+      links: [{ store: 'Aliexpress', price: '$420', url: 'https://aliexpress.com' }]
+    },
+    {
+      id: 'pixel9pro', brand: 'Google', name: 'Pixel 9 Pro XL', price: 1099, category: 'flagship',
+      chip: 'Google Tensor G4', ram: '16 GB', screen: '6.8" LTPO OLED', camera: '50 MP AI Camera', battery: '5060 mAh',
+      img: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&q=80',
+      is_camera: true, is_battery: true,
+      links: [{ store: 'Яндекс Маркет', price: '99 990 ₽', url: 'https://market.yandex.ru' }]
+    },
+    {
+      id: 'redminote13', brand: 'Xiaomi', name: 'Redmi Note 13 Pro', price: 299, category: 'budget',
+      chip: 'Snapdragon 7s Gen 2', ram: '8 GB', screen: '6.67" AMOLED 120Hz', camera: '200 MP Main', battery: '5100 mAh',
+      img: 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=400&q=80',
+      is_camera: false, is_battery: true,
+      links: [{ store: 'Aliexpress', price: '$270', url: 'https://aliexpress.com' }]
+    }
+  ];
+
+  // ---------- Утилиты ----------
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const money = n => '$' + Number(n).toLocaleString('en-US');
+  const icon = (id, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (_) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+  const tap = () => { try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (_) {} };
+
+  // ---------- Цвета ----------
+  const HEX = /^#[0-9a-f]{6}$/i;
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const toHex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, t) => { const x = rgb(a), y = rgb(b); return toHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  const lum = h => {
+    const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+    return .2126 * r + .7152 * g + .0722 * b;
+  };
+  const contrast = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + .05) / (Math.min(l1, l2) + .05); };
+  const readable = (bg, a = '#f4f4f5', b = '#18181b') => contrast(bg, a) >= contrast(bg, b) ? a : b;
+
+  // ---------- Настройки UI ----------
+  const RADII = { sm: { r: '4px', rs: '3px' }, md: { r: '14px', rs: '9px' }, lg: { r: '22px', rs: '999px' } };
+  const ACCENTS = [
+    { v: 'auto', l: 'Моно' }, { v: '#38bdf8', l: 'Голубой' }, { v: '#34d399', l: 'Зелёный' },
+    { v: '#fbbf24', l: 'Янтарный' }, { v: '#fb7185', l: 'Розовый' }, { v: '#a78bfa', l: 'Фиолетовый' }
+  ];
+  const BGS = [
+    { v: '#0f172a', l: 'Синий графит' }, { v: '#17102b', l: 'Фиолетовый' }, { v: '#0c1d17', l: 'Лесной' },
+    { v: '#261015', l: 'Бордовый' }, { v: '#1c1c1e', l: 'Графит' }, { v: '#efe7d8', l: 'Песочный' }, { v: '#e6eef8', l: 'Светло-голубой' }
+  ];
+  const RAINBOW = 'conic-gradient(#f43f5e, #fbbf24, #34d399, #38bdf8, #a78bfa, #f43f5e)';
+  const DEFAULT_UI = { theme: 'dark', accent: 'auto', radius: 'md', blur: true, customBg: '#0f172a' };
+  const STORAGE_VERSION = 2;
+
+  function sanitizeUi(raw) {
+    const u = Object.assign({}, DEFAULT_UI, raw && typeof raw === 'object' ? raw : {});
+    if (!['dark', 'light', 'custom'].includes(u.theme)) u.theme = DEFAULT_UI.theme;
+    if (!RADII[u.radius]) u.radius = DEFAULT_UI.radius;
+    if (u.accent !== 'auto' && !HEX.test(u.accent)) u.accent = 'auto';
+    if (!HEX.test(u.customBg)) u.customBg = DEFAULT_UI.customBg;
+    u.accent = u.accent.toLowerCase();
+    u.customBg = u.customBg.toLowerCase();
+    u.blur = u.blur !== false;
+    return u;
+  }
+
+  // ---------- Состояние ----------
+  let PHONES = [];
+  let byId = new Map();
+  let haystack = new Map();
+  let proActive = false;
+  let priceHistoryCache = new Map();
+
+  const validIds = a => Array.isArray(a) ? [...new Set(a)].filter(id => byId.has(id)) : [];
+  let compare = [];
+  let favs = [];
+  let ui = sanitizeUi(load('telefind_ui', null));
+  const view = { tab: 'catalog', cat: 'all', brand: 'all', query: '' };
+
+  const CATS = [['all', 'Все смартфоны'], ['flagship', 'Флагманы'], ['budget', 'Бюджетники'], ['camera', 'Камерофоны'], ['battery', 'Автономные']];
+  const CAT_FILTERS = {
+    all: () => true,
+    flagship: p => p.category === 'flagship',
+    budget: p => p.category === 'budget',
+    camera: p => p.is_camera || p.isCameraPhone,
+    battery: p => p.is_battery || p.isBatteryPhone
+  };
+  const SPECS = [
+    ['chip', 'Процессор'], ['ram', 'Память'], ['screen', 'Дисплей'], ['camera', 'Камера'], ['battery', 'Батарея'],
+    ['price', 'Цена', p => money(p.price)]
+  ];
+  const MAX_COMPARE = 3;
+
+  function reindex() {
+    byId = new Map(PHONES.map(p => [p.id, p]));
+    haystack = new Map(PHONES.map(p => [p.id, [p.brand, p.name, p.chip, p.ram, p.screen, p.camera, p.battery].join(' ').toLowerCase()]));
+  }
+
+  function loadState() {
+    const v = load('telefind_version', 0);
+    if (v !== STORAGE_VERSION) { save('telefind_version', STORAGE_VERSION); }
+    compare = validIds(load('telefind_cmp', ['iphone15promax', 's24ultra'])).slice(0, MAX_COMPARE);
+    favs = validIds(load('telefind_favs', []));
+  }
+
+  // ---------- API-клиент ----------
+  async function api(path, body) {
+    const url = API_BASE + path;
+    const opts = body
+      ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      : { method: 'GET' };
+    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(`${path}: ${res.status}`);
+    return res.json();
+  }
+
+  async function fetchPhones() {
+    if (!HAS_API) return DEMO_PHONES;
+    try {
+      const list = await api('/api/phones');
+      return Array.isArray(list) && list.length ? list : DEMO_PHONES;
+    } catch (e) {
+      console.warn('API недоступен, демо-режим', e);
+      return DEMO_PHONES;
+    }
+  }
+
+  async function fetchProStatus() {
+    if (!HAS_API || !tg || !tg.initData) return false;
+    try {
+      const r = await api('/api/pro-status', { initData: tg.initData });
+      return !!r.pro;
+    } catch (_) { return false; }
+  }
+
+  async function fetchPriceHistory(phoneId) {
+    if (!HAS_API || !tg || !tg.initData) return null;
+    if (priceHistoryCache.has(phoneId)) return priceHistoryCache.get(phoneId);
+    try {
+      const r = await api(`/api/prices/${encodeURIComponent(phoneId)}/history`, { initData: tg.initData });
+      priceHistoryCache.set(phoneId, r);
+      return r;
+    } catch (_) { return null; }
+  }
+
+  // ---------- Тема ----------
+  function applyTheme() {
+    const bg = ui.theme === 'dark' ? '#000000' : ui.theme === 'light' ? '#f4f4f5' : ui.customBg;
+    const fg = readable(bg);
+    const dark = fg === '#f4f4f5';
+    const accent = ui.accent === 'auto' ? fg : ui.accent;
+    const [r, g, b] = rgb(bg);
+    const vars = {
+      '--bg': bg,
+      '--fg': fg,
+      '--surface': dark ? mix(bg, '#ffffff', .07) : mix(bg, '#ffffff', .75),
+      '--surface-2': dark ? mix(bg, '#ffffff', .12) : mix(bg, '#000000', .06),
+      '--line': mix(bg, fg, .14),
+      '--muted': mix(bg, fg, .62),
+      '--glass': `rgba(${r}, ${g}, ${b}, .8)`,
+      '--accent': accent,
+      '--on-accent': readable(accent, '#ffffff', '#09090b'),
+      '--r': RADII[ui.radius].r,
+      '--rs': RADII[ui.radius].rs
+    };
+    const root = document.documentElement;
+    for (const k in vars) root.style.setProperty(k, vars[k]);
+    root.style.colorScheme = dark ? 'dark' : 'light';
+    root.dataset.blur = ui.blur ? 'on' : 'off';
+    const meta = $('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', bg);
+    try { tg && tg.setHeaderColor && tg.setHeaderColor(bg); tg && tg.setBackgroundColor && tg.setBackgroundColor(bg); } catch (_) {}
+  }
+
+  function commitUi() { save('telefind_ui', ui); applyTheme(); syncSettings(); }
+
+  function swatchHTML(act, v, label, color, check) {
+    return `<button class="swatch" data-act="${act}" data-value="${v}" aria-label="${label}" aria-pressed="false" style="--c:${color};--ck:${check}">${icon('check')}</button>`;
+  }
+  function customSwatchHTML(kind, label) {
+    return `<label class="swatch" data-custom="${kind}" style="--c:${RAINBOW};--ck:#ffffff" title="${label}">${icon('check')}<input type="color" data-input="${kind}" value="#38bdf8" aria-label="${label}"></label>`;
+  }
+  function buildSettings() {
+    $('#accentSwatches').innerHTML =
+      ACCENTS.map(a => a.v === 'auto'
+        ? swatchHTML('accent', 'auto', a.l, 'var(--fg)', 'var(--bg)')
+        : swatchHTML('accent', a.v, a.l, a.v, readable(a.v, '#ffffff', '#09090b'))).join('') +
+      customSwatchHTML('accent', 'Свой цвет акцента');
+    $('#bgSwatches').innerHTML =
+      BGS.map(b => swatchHTML('bg', b.v, b.l, b.v, readable(b.v))).join('') +
+      customSwatchHTML('bg', 'Свой цвет фона');
+  }
+  function customSwatch(kind, val, presets) {
+    const el = $(`[data-custom="${kind}"]`);
+    if (!el) return;
+    const own = !presets.includes(val);
+    el.classList.toggle('on', own);
+    el.style.setProperty('--c', own ? val : RAINBOW);
+    el.style.setProperty('--ck', own ? readable(val, '#ffffff', '#09090b') : '#ffffff');
+    $('input', el).value = own ? val : (kind === 'bg' ? ui.customBg : '#38bdf8');
+  }
+  function syncSettings() {
+    const pressed = (sel, test) => $$(sel).forEach(b => b.setAttribute('aria-pressed', String(test(b.dataset.value))));
+    pressed('[data-act="theme"]', v => v === ui.theme);
+    pressed('[data-act="radius"]', v => v === ui.radius);
+    pressed('[data-act="accent"]', v => v === ui.accent);
+    pressed('[data-act="bg"]', v => v === ui.customBg);
+    $('#bgGroup').hidden = ui.theme !== 'custom';
+    $('#blurSwitch').setAttribute('aria-checked', String(ui.blur));
+    customSwatch('accent', ui.accent, ACCENTS.map(a => a.v));
+    customSwatch('bg', ui.customBg, BGS.map(b => b.v));
+  }
+
+  // ---------- Рендер ----------
+  const PLACEHOLDER = `<span class="ph">${icon('logo')}</span>`;
+  const media = p => p.img ? `<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async">` : PLACEHOLDER;
+  const emptyBox = text => `<div class="empty">${text}</div>`;
+
+  function cardHTML(p, withBuy) {
+    const fav = favs.includes(p.id), cmp = compare.includes(p.id);
+    return `<article class="card">
+      <button class="fav" data-act="fav" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Убрать из закладок' : 'Добавить в закладки'}">${icon('bookmark', fav ? 'filled' : '')}</button>
+      <div class="media">${media(p)}</div>
+      <div class="meta"><span class="brand">${esc(p.brand)}</span><h3>${esc(p.name)}</h3><p>${esc(p.chip)}</p></div>
+      <div class="foot">
+        <div class="price-row"><span class="price">${money(p.price)}</span></div>
+        <button class="btn sm" data-act="cmp" data-id="${p.id}" aria-pressed="${cmp}">${cmp ? icon('check') + 'В сравнении' : icon('plus') + 'Сравнить'}</button>
+        ${withBuy ? `<button class="btn sm primary" data-act="deals" data-id="${p.id}">Купить</button>` : ''}
+      </div>
+    </article>`;
+  }
+
+  function buildChips() {
+    $('#cats').innerHTML = CATS.map(([id, l]) => `<button class="chip" data-act="cat" data-value="${id}" aria-pressed="false">${l}</button>`).join('');
+    const brands = ['all', ...new Set(PHONES.map(p => p.brand))];
+    $('#brands').innerHTML = brands.map(b => `<button class="chip" data-act="brand" data-value="${esc(b)}" aria-pressed="false">${b === 'all' ? 'Все' : esc(b)}</button>`).join('');
+  }
+  function syncChips() {
+    $$('[data-act="cat"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.value === view.cat)));
+    $$('[data-act="brand"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.value === view.brand)));
+  }
+
+  function renderCatalog() {
+    const tokens = view.query.toLowerCase().split(/\s+/).filter(Boolean);
+    const list = PHONES.filter(p =>
+      CAT_FILTERS[view.cat](p) &&
+      (view.brand === 'all' || p.brand === view.brand) &&
+      tokens.every(t => haystack.get(p.id).includes(t)));
+    $('#catalogGrid').innerHTML = list.length ? list.map(p => cardHTML(p, true)).join('') : emptyBox('Ничего не найдено. Измените запрос или фильтры.');
+  }
+
+  function renderCompare() {
+    const list = compare.map(id => byId.get(id));
+    $('#cmpClear').disabled = !list.length;
+    const el = $('#cmpBody');
+    if (!list.length) { el.innerHTML = emptyBox('Выберите смартфоны на витрине, чтобы сравнить характеристики.'); return; }
+    const cols = `style="grid-template-columns:repeat(${list.length},minmax(0,1fr))"`;
+    el.innerHTML = `
+      <div class="cmp-grid" ${cols}>${list.map(p => `
+        <div class="card cmp-head">
+          <button class="x" data-act="cmp" data-id="${p.id}" aria-label="Убрать ${esc(p.name)} из сравнения">${icon('close')}</button>
+          <div class="media sm">${media(p)}</div>
+          <h3>${esc(p.name)}</h3>
+          <span class="price">${money(p.price)}</span>
+          <button class="btn sm primary block" data-act="deals" data-id="${p.id}">Купить</button>
+        </div>`).join('')}
+      </div>
+      <div class="card specs">${SPECS.map(([key, label, fmt]) => `
+        <div class="spec"><span class="lbl">${label}</span>
+          <div class="cmp-grid" ${cols}>${list.map(p => `<span>${esc(fmt ? fmt(p) : p[key])}</span>`).join('')}</div>
+        </div>`).join('')}
+      </div>`;
+  }
+
+  function renderFavorites() {
+    const list = favs.map(id => byId.get(id));
+    $('#favGrid').innerHTML = list.length ? list.map(p => cardHTML(p, true)).join('') : emptyBox('У вас нет сохранённых моделей.');
+  }
+
+  function renderBadge() {
+    const badge = $('#badge');
+    badge.textContent = compare.length;
+    badge.hidden = !compare.length;
+  }
+
+  function renderPro() {
+    const el = $('#proBody');
+    if (!proActive) {
+      el.innerHTML = `
+        <div class="pro-hero">
+          <h2>Telefind PRO</h2>
+          <p>Открой скрытые возможности каталога — то, чего нет в обычной версии.</p>
+          <ul class="pro-features">
+            <li>${icon('trend')}<span><b>Динамика цен</b> — график изменений за 30 дней</span></li>
+            <li>${icon('star')}<span><b>Лучшие предложения</b> — скрытые скидки и промокоды</span></li>
+            <li>${icon('lock')}<span><b>История минимумов</b> — когда покупать выгоднее всего</span></li>
+          </ul>
+          <button class="btn pro block" data-act="buy-pro" style="height:44px;font-size:14px">Купить PRO — 25 ⭐</button>
+          <p style="font-size:11px;text-align:center">Оплата Telegram Stars. Активация сразу после оплаты.</p>
+        </div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="pro-hero">
+        <h2>PRO активно ⭐</h2>
+        <p>Тебе доступны графики цен и скрытые предложения. Открой любой смартфон → «Динамика цен».</p>
+      </div>
+      <div class="title-row"><h2 style="font-size:17px">Быстрый доступ</h2></div>
+      <div class="grid">${PHONES.slice(0, 4).map(p => `
+        <article class="card">
+          <div class="media">${media(p)}</div>
+          <div class="meta"><span class="brand">${esc(p.brand)}</span><h3>${esc(p.name)}</h3></div>
+          <button class="btn sm pro block" data-act="price-history" data-id="${p.id}">${icon('trend')}Динамика</button>
+        </article>`).join('')}
+      </div>`;
+  }
+
+  function render() {
+    if (view.tab === 'catalog') renderCatalog();
+    else if (view.tab === 'compare') renderCompare();
+    else if (view.tab === 'favorites') renderFavorites();
+    else if (view.tab === 'pro') renderPro();
+    renderBadge();
+  }
+
+  function setTab(tab) {
+    view.tab = tab;
+    $$('.view[id^="tab-"]').forEach(v => { v.hidden = v.id !== 'tab-' + tab; });
+    $$('.nav-btn').forEach(b => b.setAttribute('aria-current', b.dataset.value === tab ? 'page' : 'false'));
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- Действия ----------
+  let toastTimer;
+  function toast(text) {
+    const el = $('#toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function toggleCompare(id) {
+    if (compare.includes(id)) compare = compare.filter(x => x !== id);
+    else {
+      if (compare.length >= MAX_COMPARE) { toast(`Максимум ${MAX_COMPARE} модели для сравнения`); return; }
+      compare = [...compare, id];
+    }
+    save('telefind_cmp', compare);
+    render();
+  }
+
+  function toggleFav(id) {
+    favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id];
+    save('telefind_favs', favs);
+    render();
+  }
+
+  let openedSheet = null;
+  function openSheet(id) {
+    closeSheet();
+    openedSheet = $('#' + id);
+    openedSheet.classList.add('open');
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function closeSheet() {
+    if (!openedSheet) return;
+    openedSheet.classList.remove('open');
+    openedSheet = null;
+    document.documentElement.style.overflow = '';
+  }
+
+  function openDeals(id) {
+    const p = byId.get(id);
+    if (!p) return;
+    $('#dealsTitle').textContent = 'Где купить: ' + p.name;
+    const links = p.links || [];
+    $('#dealsList').innerHTML = links.length
+      ? links.map((l, i) => `
+        <div class="deal ${i === 0 ? 'best' : ''}">
+          <div><b>${esc(l.store)}${i === 0 ? ' · лучшее' : ''}</b><span>${esc(l.price || '')}</span></div>
+          <a class="btn sm primary" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-link>Перейти</a>
+        </div>`).join('')
+      : emptyBox('Ссылки на магазины пока не добавлены.');
+    openSheet('dealsSheet');
+  }
+
+  async function buyPro() {
+    if (!tg || !tg.initData) { toast('Открой через Telegram'); return; }
+    if (!HAS_API) { toast('Оплата недоступна в демо-режиме'); return; }
+    try {
+      const r = await api('/api/invoice', { initData: tg.initData });
+      if (!r.invoice_link) throw new Error('no link');
+      tg.openInvoice(r.invoice_link, (status) => {
+        if (status === 'paid') {
+          proActive = true;
+          toast('PRO активирован!');
+          setTimeout(() => { renderPro(); syncProPill(); }, 600);
+        } else if (status === 'failed') {
+          toast('Оплата не прошла');
+        }
+      });
+    } catch (e) {
+      toast('Не удалось создать счёт');
+      console.error(e);
+    }
+  }
+
+  async function showPriceHistory(id) {
+    const p = byId.get(id);
+    if (!p) return;
+    if (!proActive) { toast('Нужен PRO'); setTab('pro'); return; }
+
+    $('#dealsTitle').textContent = 'Динамика цен: ' + p.name;
+    $('#dealsList').innerHTML = `<div class="empty"><div class="spinner"></div></div>`;
+    openSheet('dealsSheet');
+
+    const history = await fetchPriceHistory(id);
+    if (!history || !history.length) {
+      $('#dealsList').innerHTML = emptyBox('История цен пока пуста. Загляни позже.');
+      return;
+    }
+    const points = history
+      .map(h => ({ date: h.recorded_at, price: parseFloat(String(h.price).replace(/[^\d.]/g, '')) || 0 }))
+      .filter(x => x.price > 0)
+      .reverse();
+    if (points.length < 2) {
+      $('#dealsList').innerHTML = emptyBox('Недостаточно данных для графика.');
+      return;
+    }
+    $('#dealsList').innerHTML = `
+      <div style="padding:8px 0">${sparkline(points)}</div>
+      <div class="label" style="margin-top:12px">Последние записи</div>
+      ${history.slice(0, 6).map(h => `
+        <div class="deal">
+          <div><b>${esc(h.store)}</b><span>${esc(h.price)}</span></div>
+          <span style="font-size:11px;color:var(--muted)">${esc(String(h.recorded_at).slice(0, 10))}</span>
+        </div>`).join('')}`;
+  }
+
+  function sparkline(points) {
+    const W = 600, H = 160, pad = 12;
+    const xs = points.map((_, i) => pad + (W - pad * 2) * i / (points.length - 1));
+    const ys = points.map(p => p.price);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const span = maxY - minY || 1;
+    const yMap = v => H - pad - (H - pad * 2) * (v - minY) / span;
+    const d = points.map((p, i) => `${i ? 'L' : 'M'}${xs[i].toFixed(1)},${yMap(p.price).toFixed(1)}`).join(' ');
+    const area = `${d} L${xs[xs.length - 1].toFixed(1)},${H - pad} L${xs[0].toFixed(1)},${H - pad} Z`;
+    return `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--pro)" stop-opacity=".35"/>
+        <stop offset="100%" stop-color="var(--pro)" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${area}" fill="url(#g)"/>
+      <path d="${d}" fill="none" stroke="var(--pro)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function syncProPill() {
+    const pill = $('#proPill');
+    pill.hidden = !proActive;
+  }
+
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a[data-link]');
+    if (link && tg && tg.openLink) {
+      e.preventDefault();
+      const url = link.href;
+      if (/^https?:\/\//i.test(url)) tg.openLink(url);
+      return;
+    }
+
+    const t = e.target.closest('[data-act]');
+    if (!t) return;
+    const { act, id, value } = t.dataset;
+    if (act === 'close-overlay' && e.target !== t) return;
+
+    switch (act) {
+      case 'tab': setTab(value); break;
+      case 'home': setTab('catalog'); break;
+      case 'cat': view.cat = value; syncChips(); renderCatalog(); break;
+      case 'brand': view.brand = value; syncChips(); renderCatalog(); break;
+      case 'fav': tap(); toggleFav(id); break;
+      case 'cmp': tap(); toggleCompare(id); break;
+      case 'cmp-clear': compare = []; save('telefind_cmp', compare); render(); break;
+      case 'deals': openDeals(id); break;
+      case 'price-history': showPriceHistory(id); break;
+      case 'buy-pro': buyPro(); break;
+      case 'settings': openSheet('settingsSheet'); break;
+      case 'close': case 'close-overlay': closeSheet(); break;
+      case 'theme': ui.theme = value; commitUi(); break;
+      case 'accent': ui.accent = value; commitUi(); break;
+      case 'bg': ui.customBg = value; commitUi(); break;
+      case 'radius': ui.radius = value; commitUi(); break;
+      case 'blur': ui.blur = !ui.blur; commitUi(); break;
+      case 'reset-ui': ui = { ...DEFAULT_UI }; commitUi(); break;
+    }
+  });
+
+  let searchTimer;
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.id === 'search') {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { view.query = t.value; renderCatalog(); }, 120);
+    } else if (t.dataset.input && HEX.test(t.value)) {
+      if (t.dataset.input === 'accent') ui.accent = t.value.toLowerCase();
+      else ui.customBg = t.value.toLowerCase();
+      commitUi();
+    }
+  });
+
+  document.addEventListener('error', e => {
+    const img = e.target;
+    if (img.tagName === 'IMG' && img.closest('.media')) img.outerHTML = PLACEHOLDER;
+  }, true);
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  // Telegram theme sync
+  try {
+    tg && tg.onEvent && tg.onEvent('themeChanged', () => {
+      // если тема не «custom», подстраиваемся под системную
+      if (ui.theme !== 'custom') applyTheme();
+    });
+  } catch (_) {}
+
+  // ---------- Старт ----------
+  (async () => {
+    PHONES = await fetchPhones();
+    reindex();
+    loadState();
+    buildChips();
+    buildSettings();
+    applyTheme();
+    syncSettings();
+    syncChips();
+    setTab('catalog');
+
+    proActive = await fetchProStatus();
+    syncProPill();
+    if (view.tab === 'pro') renderPro();
+  })();
+})();
+</script>
+</body>
+</html>
